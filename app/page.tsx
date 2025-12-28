@@ -1,27 +1,38 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import LeaderboardTable from '@/components/LeaderboardTable';
 import { LeaderboardEntry } from '@/types/leaderboard';
 
-async function getLeaderboardData(): Promise<LeaderboardEntry[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
-  
-  try {
-    const res = await fetch(`${baseUrl}/api/leaderboard`, {
-      next: { revalidate: 300 },
-    });
+export default function Home() {
+  const [data, setData] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    if (!res.ok) {
-      throw new Error('Failed to fetch leaderboard data');
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        console.log('[Page] Fetching leaderboard data...');
+        const res = await fetch('/api/leaderboard');
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const leaderboardData = await res.json();
+        console.log('[Page] Received data:', leaderboardData.length, 'entries');
+        setData(leaderboardData);
+        setError(null);
+      } catch (err) {
+        console.error('[Page] Error fetching leaderboard:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load data');
+      } finally {
+        setLoading(false);
+      }
     }
 
-    return res.json();
-  } catch (error) {
-    console.error('Error fetching leaderboard:', error);
-    return [];
-  }
-}
-
-export default async function Home() {
-  const data = await getLeaderboardData();
+    fetchData();
+  }, []);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-black to-gray-900">
@@ -39,11 +50,22 @@ export default async function Home() {
         </header>
 
         <div className="bg-black/40 backdrop-blur-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
-          {data.length > 0 ? (
+          {loading ? (
+            <div className="p-12 text-center text-gray-400">
+              <p className="text-xl">Loading leaderboard data...</p>
+              <p className="text-sm mt-2">Please check back shortly</p>
+            </div>
+          ) : error ? (
+            <div className="p-12 text-center text-red-400">
+              <p className="text-xl">Error loading leaderboard</p>
+              <p className="text-sm mt-2">{error}</p>
+              <p className="text-xs mt-4 text-gray-500">Check browser console for details</p>
+            </div>
+          ) : data.length > 0 ? (
             <LeaderboardTable data={data} />
           ) : (
             <div className="p-12 text-center text-gray-400">
-              <p className="text-xl">Loading leaderboard data...</p>
+              <p className="text-xl">No data available</p>
               <p className="text-sm mt-2">Please check back shortly</p>
             </div>
           )}
