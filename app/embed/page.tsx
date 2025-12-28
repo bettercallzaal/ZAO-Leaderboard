@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import LeaderboardTable from '@/components/LeaderboardTable';
 import { LeaderboardEntry } from '@/types/leaderboard';
 
-export default function EmbedPage() {
+function EmbedContent() {
   const [data, setData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
@@ -28,16 +28,30 @@ export default function EmbedPage() {
   }, []);
 
   return (
+    <div className="bg-black/40 backdrop-blur-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+      {data.length > 0 ? (
+        <LeaderboardTable data={data} limit={limit} />
+      ) : (
+        <div className="p-12 text-center text-gray-400">
+          <p className="text-xl">Loading leaderboard data...</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function EmbedPage() {
+  return (
     <main className="min-h-screen bg-gradient-to-b from-black to-gray-900 p-4">
-      <div className="bg-black/40 backdrop-blur-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
-        {data.length > 0 ? (
-          <LeaderboardTable data={data} limit={limit} />
-        ) : (
+      <Suspense fallback={
+        <div className="bg-black/40 backdrop-blur-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
           <div className="p-12 text-center text-gray-400">
-            <p className="text-xl">Loading leaderboard data...</p>
+            <p className="text-xl">Loading...</p>
           </div>
-        )}
-      </div>
+        </div>
+      }>
+        <EmbedContent />
+      </Suspense>
     </main>
   );
 }
