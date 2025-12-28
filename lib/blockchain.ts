@@ -40,7 +40,7 @@ export async function getZORRespect(address: string): Promise<number> {
   console.log(`[Blockchain] Fetching ZOR Respect for ${address} (tokenId=0)...`);
   try {
     const balance = await erc1155Contract.balanceOf(address, 0);
-    const formatted = Number(ethers.formatEther(balance));
+    const formatted = Number(balance);
     console.log(`[Blockchain] ZOR Respect for ${address}: ${formatted} (raw: ${balance.toString()})`);
     return formatted;
   } catch (error) {
