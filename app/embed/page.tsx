@@ -9,7 +9,10 @@ function EmbedContent() {
   const [data, setData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const searchParams = useSearchParams();
+  
   const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : undefined;
+  const showSearch = searchParams.get('search') !== 'false';
+  const highlightAddress = searchParams.get('highlight') || undefined;
 
   useEffect(() => {
     async function fetchData() {
@@ -30,7 +33,12 @@ function EmbedContent() {
   return (
     <div className="bg-black/40 backdrop-blur-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
       {data.length > 0 ? (
-        <LeaderboardTable data={data} limit={limit} />
+        <LeaderboardTable 
+          data={data} 
+          limit={limit}
+          showSearch={showSearch}
+          highlightAddress={highlightAddress}
+        />
       ) : (
         <div className="p-12 text-center text-gray-400">
           <p className="text-xl">Loading leaderboard data...</p>
