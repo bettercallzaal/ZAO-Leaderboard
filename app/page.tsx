@@ -17,7 +17,18 @@ export default function Home() {
       else setLoading(true);
 
       const res = await fetch('/api/leaderboard');
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+      if (!res.ok) {
+        let errorMsg = `HTTP error! status: ${res.status}`;
+        try {
+          const errorData = await res.json();
+          if (errorData.details) errorMsg = `${errorData.error}: ${errorData.details}`;
+          else if (errorData.error) errorMsg = errorData.error;
+        } catch (e) {
+          // Fallback to status text
+        }
+        throw new Error(errorMsg);
+      }
 
       const result = await res.json();
       setData(result.data);

@@ -8,25 +8,37 @@ import { LeaderboardEntry } from '@/types/leaderboard';
 function EmbedContent() {
   const [data, setData] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : undefined;
   const showSearch = searchParams.get('search') !== 'false';
   const highlightAddress = searchParams.get('highlight') || undefined;
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch('/api/leaderboard');
-        if (!res.ok) throw new Error('Failed to fetch');
-        const result = await res.json();
-        setData(result.data);
-      } catch (err) {
-        console.error('Error fetching leaderboard:', err);
-      } finally {
-        setLoading(false);
+  async function fetchData() {
+    try {
+      const res = await fetch('/api/leaderboard');
+      if (!res.ok) {
+        let errorMsg = `HTTP error! status: ${res.status}`;
+        try {
+          const errorData = await res.json();
+          if (errorData.details) errorMsg = `${errorData.error}: ${errorData.details}`;
+          else if (errorData.error) errorMsg = errorData.error;
+        } catch (e) { }
+        throw new Error(errorMsg);
       }
+      const result = await res.json();
+      setData(result.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching leaderboard:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load data');
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -45,6 +57,18 @@ function EmbedContent() {
           <p className="text-sm font-medium tracking-wide text-gray-500 uppercase mt-8 animate-pulse">
             Syncing Ledger...
           </p>
+        </div>
+      ) : error ? (
+        <div className="p-12 text-center text-red-400">
+          <div className="text-4xl mb-4">⚠️</div>
+          <p className="text-xl font-medium">Error loading data</p>
+          <p className="text-sm mt-2 opacity-80 max-w-md mx-auto">{error}</p>
+          <button
+            onClick={() => { setError(null); setLoading(true); fetchData(); }}
+            className="mt-6 px-6 py-2 bg-red-500/10 border border-red-500/20 rounded-full hover:bg-red-500/20 transition-all font-medium text-sm"
+          >
+            Retry Connection
+          </button>
         </div>
       ) : data.length > 0 ? (
         <LeaderboardTable

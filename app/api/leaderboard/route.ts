@@ -8,6 +8,29 @@ export const revalidate = 300;
 
 export async function GET() {
   console.log('[API] Starting leaderboard fetch...');
+
+  // Validate environment variables
+  const requiredEnv = [
+    'AIRTABLE_API_TOKEN',
+    'AIRTABLE_BASE_ID',
+    'AIRTABLE_TABLE_NAME',
+    'ALCHEMY_OPTIMISM_RPC',
+    'ERC20_ZAO_CONTRACT',
+    'ERC1155_ZOR_CONTRACT'
+  ];
+  const missingEnv = requiredEnv.filter(env => !process.env[env]);
+
+  if (missingEnv.length > 0) {
+    console.error('[API] Missing environment variables:', missingEnv);
+    return NextResponse.json(
+      {
+        error: 'Server Configuration Error',
+        details: `Missing environment variables: ${missingEnv.join(', ')}. Please check your Vercel project settings.`
+      },
+      { status: 500 }
+    );
+  }
+
   const cached = loadLeaderboardFromCache();
 
   try {
