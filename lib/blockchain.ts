@@ -64,7 +64,8 @@ export async function getBatchBalances(addresses: string[], existingData?: Leade
   const erc20Interface = new ethers.Interface(ERC20_ABI);
   const erc1155Interface = new ethers.Interface(ERC1155_ABI);
 
-  addresses.forEach(address => {
+  addresses.forEach(rawAddress => {
+    const address = rawAddress.trim();
     // OG Respect (ERC20)
     calls.push({
       target: process.env.ERC20_ZAO_CONTRACT!,

@@ -25,10 +25,11 @@ export async function fetchAirtableRecords(): Promise<AirtableRecord[]> {
     for (const record of airtableRecords) {
       const name = record.get('Name') as string;
       const addressField = record.get('ETH WALLET (from Wallet Data 2)') as string[] | string;
-      
+
       // Handle address field - it's an array in Airtable
-      const address = Array.isArray(addressField) ? addressField[0] : addressField;
-      
+      const rawAddress = Array.isArray(addressField) ? addressField[0] : addressField;
+      const address = rawAddress?.trim();
+
       console.log(`[Airtable] Record: name="${name}", address="${address}"`);
 
       if (name && address) {
