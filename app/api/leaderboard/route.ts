@@ -1,36 +1,35 @@
 import { NextResponse } from 'next/server';
 import { fetchAirtableRecords } from '@/lib/airtable';
-import { getRespectBalances } from '@/lib/blockchain';
+import { getBatchBalances } from '@/lib/blockchain';
 import { LeaderboardEntry } from '@/types/leaderboard';
+import { loadLeaderboardFromCache, saveLeaderboardToCache } from '@/lib/storage';
 
 export const revalidate = 300;
 
 export async function GET() {
   console.log('[API] Starting leaderboard fetch...');
-  try {
-    console.log('[API] Fetching Airtable records...');
-    const airtableRecords = await fetchAirtableRecords();
-    console.log(`[API] Fetched ${airtableRecords.length} records from Airtable:`, airtableRecords);
+  const cached = loadLeaderboardFromCache();
 
-    console.log('[API] Fetching blockchain balances for each address...');
-    const leaderboardPromises = airtableRecords.map(async (record) => {
-      console.log(`[API] Fetching balances for ${record.name} (${record.address})...`);
-      const balances = await getRespectBalances(record.address);
-      console.log(`[API] Balances for ${record.name}:`, balances);
-      
+  try {
+    const airtableRecords = await fetchAirtableRecords();
+    console.log(`[API] Fetched ${airtableRecords.length} records from Airtable`);
+
+    const addresses = airtableRecords.map(r => r.address);
+    // Pass cached data to preserve firstTokenDate
+    const balances = await getBatchBalances(addresses, cached?.data);
+
+    const leaderboardData: LeaderboardEntry[] = airtableRecords.map((record) => {
+      const balance = balances.find(b => b.address.toLowerCase() === record.address.toLowerCase());
       return {
         name: record.name,
         address: record.address,
-        ogRespect: balances.ogRespect,
-        zorRespect: balances.zorRespect,
-        totalRespect: balances.totalRespect,
+        ogRespect: balance?.ogRespect || 0,
+        zorRespect: balance?.zorRespect || 0,
+        totalRespect: balance?.totalRespect || 0,
+        firstTokenDate: balance?.firstTokenDate,
         rank: 0,
       };
     });
-
-    console.log('[API] Waiting for all balance queries to complete...');
-    const leaderboardData = await Promise.all(leaderboardPromises);
-    console.log('[API] All balances fetched. Sorting by total respect...');
 
     leaderboardData.sort((a, b) => b.totalRespect - a.totalRespect);
 
@@ -38,18 +37,35 @@ export async function GET() {
       ...entry,
       rank: index + 1,
     }));
-    console.log('[API] Leaderboard ranked. Returning data:', rankedLeaderboard);
 
-    return NextResponse.json(rankedLeaderboard, {
+    const result = {
+      data: rankedLeaderboard,
+      lastUpdated: Date.now()
+    };
+
+    // Save to cache for future runs/fallbacks
+    saveLeaderboardToCache(result);
+
+    return NextResponse.json(result, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },
     });
   } catch (error) {
     console.error('[API] ERROR - Leaderboard API failed:', error);
-    console.error('[API] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
+    if (cached) {
+      console.log('[API] Returning cached data due to failure');
+      return NextResponse.json(cached, {
+        headers: {
+          'X-Cache-Fallback': 'true',
+          'Cache-Control': 'no-cache'
+        }
+      });
+    }
+
     return NextResponse.json(
-      { error: 'Failed to fetch leaderboard data' },
+      { error: 'Failed to fetch leaderboard data and no cache found' },
       { status: 500 }
     );
   }

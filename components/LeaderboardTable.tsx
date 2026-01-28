@@ -13,11 +13,11 @@ interface LeaderboardTableProps {
 type SortField = 'rank' | 'name' | 'ogRespect' | 'zorRespect' | 'totalRespect';
 type SortDirection = 'asc' | 'desc';
 
-export default function LeaderboardTable({ 
-  data, 
-  limit, 
+export default function LeaderboardTable({
+  data,
+  limit,
   showSearch = true,
-  highlightAddress 
+  highlightAddress
 }: LeaderboardTableProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<SortField>('rank');
@@ -79,7 +79,7 @@ export default function LeaderboardTable({
     if (rank === 1) return 'bg-yellow-500/10 hover:bg-yellow-500/20';
     if (rank === 2) return 'bg-gray-400/10 hover:bg-gray-400/20';
     if (rank === 3) return 'bg-orange-600/10 hover:bg-orange-600/20';
-    return 'hover:bg-white/5';
+    return `hover:bg-white/5 group`;
   };
 
   const SortIcon = ({ field }: { field: SortField }) => {
@@ -115,7 +115,7 @@ export default function LeaderboardTable({
         <table className="w-full border-collapse">
           <thead className="sticky top-0 bg-black/90 backdrop-blur-sm z-10">
             <tr className="border-b border-white/10">
-              <th 
+              <th
                 onClick={() => handleSort('rank')}
                 className="px-4 py-4 text-left text-sm font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
               >
@@ -124,7 +124,7 @@ export default function LeaderboardTable({
                   <SortIcon field="rank" />
                 </div>
               </th>
-              <th 
+              <th
                 onClick={() => handleSort('name')}
                 className="px-4 py-4 text-left text-sm font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
               >
@@ -133,7 +133,7 @@ export default function LeaderboardTable({
                   <SortIcon field="name" />
                 </div>
               </th>
-              <th 
+              <th
                 onClick={() => handleSort('ogRespect')}
                 className="px-4 py-4 text-right text-sm font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
               >
@@ -142,7 +142,7 @@ export default function LeaderboardTable({
                   <SortIcon field="ogRespect" />
                 </div>
               </th>
-              <th 
+              <th
                 onClick={() => handleSort('zorRespect')}
                 className="px-4 py-4 text-right text-sm font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
               >
@@ -151,7 +151,7 @@ export default function LeaderboardTable({
                   <SortIcon field="zorRespect" />
                 </div>
               </th>
-              <th 
+              <th
                 onClick={() => handleSort('totalRespect')}
                 className="px-4 py-4 text-right text-sm font-semibold text-gray-400 uppercase tracking-wider cursor-pointer hover:text-white transition-colors"
               >
@@ -161,6 +161,9 @@ export default function LeaderboardTable({
                 </div>
               </th>
               <th className="px-4 py-4 text-left text-sm font-semibold text-gray-400 uppercase tracking-wider">
+                Joined
+              </th>
+              <th className="px-4 py-4 text-left text-sm font-semibold text-gray-400 uppercase tracking-wider">
                 Address
               </th>
             </tr>
@@ -168,7 +171,7 @@ export default function LeaderboardTable({
           <tbody>
             {displayData.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                <td colSpan={7} className="px-4 py-12 text-center text-gray-400">
                   No results found
                 </td>
               </tr>
@@ -178,33 +181,36 @@ export default function LeaderboardTable({
                   key={entry.address}
                   className={`border-b border-white/5 transition-colors ${getRowClass(entry.rank, entry.address)}`}
                 >
-              <td className="px-4 py-4 text-sm font-medium">
-                <span className={entry.rank <= 3 ? 'text-lg font-bold' : ''}>
-                  {entry.rank}
-                </span>
-              </td>
-              <td className="px-4 py-4 text-sm font-medium">{entry.name}</td>
-              <td className="px-4 py-4 text-sm text-right text-gray-300">
-                {formatNumber(entry.ogRespect)}
-              </td>
-              <td className="px-4 py-4 text-sm text-right text-gray-300">
-                {formatNumber(entry.zorRespect)}
-              </td>
-              <td className="px-4 py-4 text-sm text-right">
-                <span className="font-bold text-lg text-white">
-                  {formatNumber(entry.totalRespect)}
-                </span>
-              </td>
-              <td className="px-4 py-4 text-sm">
-                <a
-                  href={`https://optimistic.etherscan.io/address/${entry.address}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-white transition-colors font-mono text-xs"
-                >
-                  {shortenAddress(entry.address)}
-                </a>
-              </td>
+                  <td className="px-4 py-4 text-sm font-medium">
+                    <span className={entry.rank <= 3 ? 'text-lg font-bold' : ''}>
+                      {entry.rank}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-sm font-medium">{entry.name}</td>
+                  <td className="px-4 py-4 text-sm text-right text-gray-300">
+                    {formatNumber(entry.ogRespect)}
+                  </td>
+                  <td className="px-4 py-4 text-sm text-right text-gray-300">
+                    {formatNumber(entry.zorRespect)}
+                  </td>
+                  <td className="px-4 py-4 text-sm text-right">
+                    <span className="font-bold text-lg text-white">
+                      {formatNumber(entry.totalRespect)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">
+                    {entry.firstTokenDate || '-'}
+                  </td>
+                  <td className="px-4 py-4 text-sm">
+                    <a
+                      href={`https://optimistic.etherscan.io/address/${entry.address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-white transition-colors font-mono text-xs"
+                    >
+                      {shortenAddress(entry.address)}
+                    </a>
+                  </td>
                 </tr>
               ))
             )}
