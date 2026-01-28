@@ -52,7 +52,10 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('[API] ERROR - Leaderboard API failed:', error);
+    console.error('[API] CRITICAL ERROR:', error);
+    if (error instanceof Error) {
+      console.error('[API] Stack trace:', error.stack);
+    }
 
     if (cached) {
       console.log('[API] Returning cached data due to failure');
@@ -65,7 +68,10 @@ export async function GET() {
     }
 
     return NextResponse.json(
-      { error: 'Failed to fetch leaderboard data and no cache found' },
+      {
+        error: 'Failed to fetch leaderboard data',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     );
   }

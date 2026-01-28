@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "npx tsx tests/leaderboard.test.ts",
-    "health-check": "node --env-file=.env.local -r tsx/register scripts/health-check.ts"
+    "health-check": "npx tsx --env-file=.env.local scripts/health-check.ts"
   },
   "dependencies": {
     "airtable": "^0.12.2",
