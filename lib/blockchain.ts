@@ -55,6 +55,40 @@ export async function getRespectBalances(address: string) {
   };
 }
 
+export async function getHistoricFirstDate(address: string): Promise<string | undefined> {
+  console.log(`[Blockchain] Looking up historic first date for ${address}...`);
+  try {
+    const params = {
+      fromBlock: "0x0",
+      toBlock: "latest",
+      toAddress: address,
+      contractAddresses: [
+        process.env.ERC20_ZAO_CONTRACT!,
+        process.env.ERC1155_ZOR_CONTRACT!
+      ],
+      category: ["erc20", "erc1155"],
+      order: "asc",
+      withMetadata: true,
+      maxCount: "0x1"
+    };
+
+    const response = await (provider as any).send("alchemy_getAssetTransfers", [params]);
+    const transfers = response.transfers;
+
+    if (transfers && transfers.length > 0) {
+      const firstTransfer = transfers[0];
+      const timestamp = firstTransfer.metadata?.blockTimestamp;
+      if (timestamp) {
+        return timestamp.split('T')[0];
+      }
+    }
+    return undefined;
+  } catch (error) {
+    console.error(`[Blockchain] Historic lookup failed for ${address}:`, error);
+    return undefined;
+  }
+}
+
 import { LeaderboardEntry } from '@/types/leaderboard';
 
 export async function getBatchBalances(addresses: string[], existingData?: LeaderboardEntry[]) {
@@ -101,12 +135,13 @@ export async function getBatchBalances(addresses: string[], existingData?: Leade
         zorRespect = Number(decoded[0]);
       }
 
-      // Preserve existing date if any, otherwise default to today if balance > 0
+      // Find if we already have a firstTokenDate for this user
       const existingUser = existingData?.find(u => u.address.toLowerCase() === address.toLowerCase());
       let firstTokenDate = existingUser?.firstTokenDate;
 
+      // FETCH REAL DATE: If no date in cache and user has balance, fetch it from chain history
       if (!firstTokenDate && (ogRespect > 0 || zorRespect > 0)) {
-        firstTokenDate = new Date().toISOString().split('T')[0];
+        firstTokenDate = await getHistoricFirstDate(address);
       }
 
       balances.push({
@@ -121,15 +156,20 @@ export async function getBatchBalances(addresses: string[], existingData?: Leade
     return balances;
   } catch (error) {
     console.error('[Blockchain] Batch fetch error:', error);
-    // Fallback to individual calls if Multicall fails
-    console.log('[Blockchain] Falling back to individual calls...');
+    // Fallback to individual calls
     return Promise.all(addresses.map(async (address) => {
-      const balances = await getRespectBalances(address);
+      const b = await getRespectBalances(address);
       const existingUser = existingData?.find(u => u.address.toLowerCase() === address.toLowerCase());
+      let firstTokenDate = existingUser?.firstTokenDate;
+
+      if (!firstTokenDate && b.totalRespect > 0) {
+        firstTokenDate = await getHistoricFirstDate(address);
+      }
+
       return {
         address,
-        ...balances,
-        firstTokenDate: existingUser?.firstTokenDate || (balances.totalRespect > 0 ? new Date().toISOString().split('T')[0] : undefined)
+        ...b,
+        firstTokenDate
       };
     }));
   }
